@@ -27,6 +27,7 @@ import (
 
 	"github.com/onsi/ginkgo/config"
 	"github.com/pkg/errors"
+	clientset "k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -436,4 +437,20 @@ func AfterReadingAllFlags(t *TestContextType) {
 		}
 		os.Exit(1)
 	}
+
+	if TestContext.CloudConfig.NumNodes < 0 {
+		// Is ClientSet set here yet? TODO
+		TestContext.CloudConfig.NumNodes = countSchedulableNodes(f.ClientSet)
+	}
+}
+
+func countSchedulableNodes(c clientset.Interface) int {
+	count := 0
+	nodes = waitListSchedulableNodesOrDie(c)
+	for _, node := range nodes {
+		if isNodeSchedulable(node) {
+			count++
+		}
+	}
+	return count
 }
